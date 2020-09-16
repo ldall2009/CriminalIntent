@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.room.Room
 import database.CrimeDatabase
 import java.util.*
+import java.util.concurrent.Executors
 
 private const val DATABASE_NAME = "crime-database"
 
@@ -46,9 +47,32 @@ class CrimeRepository private constructor(context: Context) {
 
     private val crimeDao = database.crimeDao()
 
+    /**
+     * An Executor is an object that references a thread.  An executor instance has a
+     * function called execute that accepts a block of code to run.  The code you provide
+     * in the block will run on whatever thread the executor points to.
+     *
+     * The newSingleThreadExecutor() function returns an executor instance that points to a
+     * new thread.  Any work you execute with the executor will therefore happen off the
+     * main thread.
+     */
+    private val executor = Executors.newSingleThreadExecutor()
+
     fun getCrimes(): LiveData<List<Crime>> = crimeDao.getCrimes()
 
     fun getCrime(id: UUID): LiveData<Crime?> = crimeDao.getCrime(id)
+
+    fun updateCrime(crime: Crime) {
+        executor.execute {
+            crimeDao.updateCrime(crime)
+        }
+    }
+
+    fun addCrime(crime: Crime) {
+        executor.execute {
+            crimeDao.addCrime(crime)
+        }
+    }
 
     /**
      * To make CrimeRepository a singleton, you add two functions to its companion object.

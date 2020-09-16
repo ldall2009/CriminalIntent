@@ -1,5 +1,6 @@
 package com.example.criminalintent
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -14,16 +15,38 @@ import androidx.lifecycle.ViewModelProviders
 
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import java.util.*
 
 private const val TAG = "CrimeListFragment"
 
 class CrimeListFragment : Fragment() {
+
+    /**
+     * Required interface for hosting activities
+     */
+    interface Callbacks {
+        fun onCrimeSelected(crimeID: UUID)
+    }
+
+    private var callbacks: Callbacks? = null
 
     private lateinit var crimeRecyclerView: RecyclerView
     private var adapter: CrimeAdapter? = CrimeAdapter(emptyList())
 
     private val crimeListViewModel: CrimeListViewModel by lazy {
         ViewModelProviders.of(this).get(CrimeListViewModel::class.java)
+    }
+
+    /**
+     * The Fragment.onAttach(Context) lifecycle function is called when a fragment is
+     * attached to an activity. Here you stash the Context argument passed to
+     * onAttach(...) in your callbacks property. Since CrimeListFragment is hosted
+     * in an activity, the Context object passed to onAttach(...) is the activity
+     * instance hosting the fragment.
+     */
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callbacks = context as Callbacks?
     }
 
     override fun onCreateView(
@@ -68,6 +91,15 @@ class CrimeListFragment : Fragment() {
                     updateUI(crimes)
                 }
             })
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        /**
+         * You set the variable to null here because afterward you cannot access the
+         * activity or count on the activity continuing to exist.
+         */
+        callbacks = null
     }
 
     private fun updateUI(crimes: List<Crime>) {
@@ -121,8 +153,7 @@ class CrimeListFragment : Fragment() {
         }
 
         override fun onClick(v: View) {
-            Toast.makeText(context, "${crime.title} clicked!", Toast.LENGTH_SHORT)
-                .show()
+            callbacks?.onCrimeSelected(crime.id)
         }
     }
 
