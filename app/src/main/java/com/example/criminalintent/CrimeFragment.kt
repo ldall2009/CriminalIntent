@@ -17,8 +17,10 @@ import androidx.lifecycle.Observer
 
 private const val TAG = "CrimeFragment"
 private const val ARG_CRIME_ID = "crime_id"
+private const val DIALOG_DATE = "DialogDate"
+private const val REQUEST_DATE = 0
 
-class CrimeFragment : Fragment() {
+class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
 
     private lateinit var crime: Crime
     private lateinit var titleField: EditText
@@ -34,8 +36,7 @@ class CrimeFragment : Fragment() {
         crime = Crime()
 
         // retrieve the UUID from the fragment arguments
-        val crimeId: UUID =
-            arguments?.getSerializable(ARG_CRIME_ID) as UUID
+        val crimeId: UUID = arguments?.getSerializable(ARG_CRIME_ID) as UUID
 
         // load crime from database
         crimeDetailViewModel.loadCrime(crimeId)
@@ -65,24 +66,20 @@ class CrimeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view =
-            inflater.inflate(R.layout.fragment_crime, container, false)
+        val view = inflater.inflate(R.layout.fragment_crime, container, false)
 
         //After the view is inflated, get a reference to the EditText using findViewById.
         titleField = view.findViewById(R.id.crime_title) as EditText
         dateButton = view.findViewById(R.id.crime_date) as Button
         solvedCheckBox = view.findViewById(R.id.crime_solved) as CheckBox
 
-        dateButton.apply {
-            text = crime.date.toString()
-            isEnabled = false
-        }
-
-            return view
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val crimeId = arguments?.getSerializable(ARG_CRIME_ID) as UUID
+        crimeDetailViewModel.loadCrime(crimeId)
         crimeDetailViewModel.crimeLiveData.observe(
             viewLifecycleOwner,
             Observer { crime ->
@@ -92,6 +89,7 @@ class CrimeFragment : Fragment() {
                 }
             })
     }
+
 
     override fun onStart(){
         super.onStart()
@@ -135,8 +133,32 @@ class CrimeFragment : Fragment() {
         titleField.addTextChangedListener(titleWatcher)
 
         solvedCheckBox.apply {
-            setOnCheckedChangeListener {
-                _, isChecked -> crime.isSolved = isChecked
+            setOnCheckedChangeListener { _, isChecked ->
+                crime.isSolved = isChecked
+            }
+        }
+
+        dateButton.setOnClickListener {
+            DatePickerFragment.newInstance(crime.date).apply {
+
+                /**
+                 * To have CrimeFragment receive the date back from DatePickerFragment, you
+                 * need a way to keep track of the relationship between the two fragments.
+                 *
+                 * You can create a similar connection by making CrimeFragment the target
+                 * fragment of DatePickerFragment. This connection is automatically
+                 * re-established after both CrimeFragment and DatePickerFragment are
+                 * destroyed and re-created by the OS.
+                 */
+                setTargetFragment(this@CrimeFragment, REQUEST_DATE)
+
+                /**
+                 * this@CrimeFragment is needed to call requireFragmentManager() from the
+                 * CrimeFragment instead of the DatePickerFragment. this references the
+                 * DatePickerFragment inside the apply block, so you need to specify the
+                 * this from the outer scope.
+                 */
+                show(this@CrimeFragment.requireFragmentManager(), DIALOG_DATE)
             }
         }
     }
@@ -149,6 +171,12 @@ class CrimeFragment : Fragment() {
          * user switches tasks
          */
         crimeDetailViewModel.saveCrime(crime)
+    }
+
+    // Used to allow CrimeFragment to respond to new dates entered for a crime by the user.
+    override fun onDateSelected(date: Date) {
+        crime.date = date
+        updateUI()
     }
 
     /**
@@ -173,7 +201,7 @@ class CrimeFragment : Fragment() {
     private fun updateUI() {
         titleField.setText(crime.title)
         dateButton.text = crime.date.toString()
-        solvedCheckBox.apply {
+        solvedCheckBox. apply {
             isChecked = crime.isSolved
             jumpDrawablesToCurrentState()
         }
