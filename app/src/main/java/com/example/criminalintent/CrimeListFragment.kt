@@ -7,14 +7,15 @@ import android.util.Log
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import java.util.*
+
 
 private const val TAG = "CrimeListFragment"
 
@@ -76,6 +77,40 @@ class CrimeListFragment : Fragment() {
         crimeRecyclerView = view.findViewById(R.id.crime_recycler_view) as RecyclerView
         crimeRecyclerView.layoutManager = LinearLayoutManager(context)
         crimeRecyclerView.adapter = adapter
+
+        /**
+         * Functionality that gets attached to the RecyclerView that handles swiping a Crime.
+         * In onSwiped(...), we get the Crime contents of the crime that the user had swiped, and
+         * we delete that specific crime from our Room database.
+         */
+        val helper = ItemTouchHelper(
+            object : ItemTouchHelper.SimpleCallback(
+                0,
+                ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+            ) {
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: ViewHolder,
+                    target: ViewHolder
+                ): Boolean {
+                    return false    //because we dont care about trying to move Crimes (AKA, do nothing)
+                }
+
+                override fun onSwiped(
+                    viewHolder: ViewHolder,
+                    direction: Int
+                ) {
+
+                    val position = viewHolder.adapterPosition
+                    val myWord: Crime? = adapter?.getCrimeAtPosition(position)
+                    if (myWord != null) {
+                        crimeListViewModel.deleteCrime(myWord)
+                    }
+                }
+            })
+
+        helper.attachToRecyclerView(crimeRecyclerView)
+
         return view
     }
 
@@ -213,7 +248,7 @@ class CrimeListFragment : Fragment() {
          * views.
          */
         override fun onBindViewHolder(holder: CrimeHolder, position: Int) {
-            val crime = crimes[position]
+            val crime = getCrimeAtPosition(position)
             holder.bind(crime)
         }
 
@@ -224,6 +259,10 @@ class CrimeListFragment : Fragment() {
          * number of items in the list of crimes to answer the recycler view’s request.
          */
         override fun getItemCount() = crimes.size
+
+        fun getCrimeAtPosition(position: Int): Crime {
+            return crimes[position]
+        }
 
     }
 

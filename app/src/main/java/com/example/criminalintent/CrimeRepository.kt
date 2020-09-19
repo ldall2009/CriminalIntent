@@ -74,6 +74,12 @@ class CrimeRepository private constructor(context: Context) {
         }
     }
 
+    fun deleteCrime(crime: Crime) {
+        executor.execute {
+            crimeDao.deleteCrime(crime)
+        }
+    }
+
     /**
      * To make CrimeRepository a singleton, you add two functions to its companion object.
      * One initializes a new instance of the repository, and the other accesses the
