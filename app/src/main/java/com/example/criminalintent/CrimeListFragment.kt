@@ -2,6 +2,7 @@ package com.example.criminalintent
 
 import android.content.Context
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.util.Log
 import android.view.*
 import android.widget.ImageView
@@ -171,7 +172,8 @@ class CrimeListFragment : Fragment() {
         fun bind(crime: Crime) {
             this.crime = crime
             titleTextView.text = this.crime.title
-            dateTextView.text = this.crime.date.toString()
+            // Date and Time formats found on Android's SimpleDateFormat's docs page.
+            dateTextView.text = DateFormat.format("EEEE, M/d/yyy", this.crime.date)
             solvedImageView.visibility = if (crime.isSolved) {
                 View.VISIBLE
             } else {

@@ -3,7 +3,7 @@ package com.example.criminalintent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
+import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,9 +11,11 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import java.util.*
-import androidx.lifecycle.Observer
+
 
 private const val TAG = "CrimeFragment"
 private const val ARG_CRIME_ID = "crime_id"
@@ -26,6 +28,7 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
     private lateinit var titleField: EditText
     private lateinit var dateButton: Button
     private lateinit var solvedCheckBox: CheckBox
+    private lateinit var submitButton: Button
 
     private val crimeDetailViewModel: CrimeDetailViewModel by lazy {
         ViewModelProviders.of(this).get(CrimeDetailViewModel::class.java)
@@ -72,6 +75,7 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         titleField = view.findViewById(R.id.crime_title) as EditText
         dateButton = view.findViewById(R.id.crime_date) as Button
         solvedCheckBox = view.findViewById(R.id.crime_solved) as CheckBox
+        submitButton = view.findViewById(R.id.submit_button) as Button
 
         return view
     }
@@ -161,16 +165,20 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
                 show(this@CrimeFragment.requireFragmentManager(), DIALOG_DATE)
             }
         }
-    }
 
-    override fun onStop() {
-        super.onStop()
+        submitButton.setOnClickListener {
+            crimeDetailViewModel.saveCrime(crime)
 
-        /**
-         * the data will get saved when the user finishes the detail screen or when the
-         * user switches tasks
-         */
-        crimeDetailViewModel.saveCrime(crime)
+            /**
+             * Gets the activity and the activity manager, and says to pop this fragment off the stack
+             * and return to the previous fragment.  In this case, the Fragment that displays the
+             * details for a specific crime will get popped off the stack, returning to the Fragment
+             * displaying the list of crimes.
+             */
+            activity?.supportFragmentManager?.popBackStack("CrimeList", FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        }
+
+
     }
 
     // Used to allow CrimeFragment to respond to new dates entered for a crime by the user.
@@ -178,6 +186,7 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
         crime.date = date
         updateUI()
     }
+
 
     /**
      * To attach the arguments bundle to a fragment, you call Fragment.setArguments(Bundle).
@@ -200,7 +209,7 @@ class CrimeFragment : Fragment(), DatePickerFragment.Callbacks {
 
     private fun updateUI() {
         titleField.setText(crime.title)
-        dateButton.text = crime.date.toString()
+        dateButton.text = DateFormat.format("EEEE, M/d/yyy", crime.date)
         solvedCheckBox. apply {
             isChecked = crime.isSolved
             jumpDrawablesToCurrentState()
